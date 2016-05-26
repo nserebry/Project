@@ -1,0 +1,92 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Run mocha test inside docker container</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.19.1">
+      <projectUrl>https://github.com/testingry/Project/</projectUrl>
+      <displayName></displayName>
+    </com.coravy.hudson.plugins.github.GithubProjectProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>IMAGE_TAG</name>
+          <description>Tag of the image to be used</description>
+          <defaultValue>latest</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>TEST_ENV</name>
+          <description>Target test environment</description>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>development</string>
+              <string>staging</string>
+              <string>production</string>
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>DUMMY_ENV1</name>
+          <description>Dummy environment variable just to show how it can be used in mocha test script</description>
+          <defaultValue>dummy_environment_variable1</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.4">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>git@github.com:testingry/Project.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/master</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command># Only for OS X
+eval $(docker-machine env)
+
+image=localhost:5000/mocha-test-image:&quot;$IMAGE_TAG&quot;
+
+# Pull docker image from local repository
+docker pull &quot;$image&quot;
+
+# Run test
+docker run --name mocha-test-container -e DUMMY_ENV1=env1 -e DUMMY_ENV2=env2 &quot;$image&quot;
+
+# Fetch test results
+docker cp mocha-test-container:/usr/src/app/test-results.xml ./
+
+# Remove container
+docker rm mocha-test-container
+
+# Delete image
+docker rmi &quot;$image&quot;
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.junit.JUnitResultArchiver plugin="junit@1.2-beta-4">
+      <testResults>test-results.xml</testResults>
+      <keepLongStdio>true</keepLongStdio>
+      <testDataPublishers/>
+      <healthScaleFactor>1.0</healthScaleFactor>
+    </hudson.tasks.junit.JUnitResultArchiver>
+  </publishers>
+  <buildWrappers/>
+</project>
