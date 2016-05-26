@@ -6,7 +6,7 @@
   "scripts": {
     "test": "./node_modules/.bin/mocha --reporter spec"
   },
-  "author": "Natalie"
+  "author": "Natalie",
   "license": "MIT",
   "dependencies": {
     "chai": "^3.5.0",
